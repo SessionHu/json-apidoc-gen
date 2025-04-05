@@ -78,6 +78,18 @@ main :: IO ()
 main = do
   jsonData <- readJsonStream 4096
   case decode jsonData of
-    Just (Object o) -> printObjectKV "" o
+    Just (Object o) -> do
+      putStrLn "## title\n"
+      putStrLn "> https://\n"
+      putStrLn "*请求方法: *\n"
+      putStrLn "认证方式: \n"
+      putStrLn "**URL 参数:**\n"
+      putStrLn "**JSON 回复:**\n"
+      printObjectKV "" o
+      putStrLn "**示例:**\n"
+      putStrLn "```shell\ncurl -\n```\n"
+      putStrLn "<details>\n<summary>查看响应示例:</summary>\n"
+      putStrLn "```json\n```\n"
+      putStrLn "</details>"
     Just val -> hPutStrLn stderr $ "Not Object root: " ++ getValueType val
     Nothing -> hPutStrLn stderr "Not valid JSON input"
