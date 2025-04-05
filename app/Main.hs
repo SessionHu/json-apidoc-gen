@@ -7,11 +7,10 @@ import Data.Aeson.KeyMap (KeyMap, toList)
 import Data.Aeson.Key (toString)
 import Data.Vector (Vector, (!?), length)
 import Data.Maybe (listToMaybe)
-import System.IO (stdin, hSetBinaryMode)
+import System.IO (stderr, stdin, hPutStrLn)
 
 readJsonStream :: Int -> IO BSL.ByteString
 readJsonStream chunkSize = do
-  hSetBinaryMode stdin True
   let readChunks = do
         chunk <- BS.hGetSome stdin chunkSize
         if BS.null chunk
@@ -80,5 +79,5 @@ main = do
   jsonData <- readJsonStream 4096
   case decode jsonData of
     Just (Object o) -> printObjectKV "" o
-    Just val -> putStrLn $ "Not Object root: " ++ getValueType val
-    Nothing -> putStrLn "Not valid JSON input"
+    Just val -> hPutStrLn stderr $ "Not Object root: " ++ getValueType val
+    Nothing -> hPutStrLn stderr "Not valid JSON input"
