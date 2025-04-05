@@ -1,74 +1,84 @@
 module Main where
 
+import qualified Data.ByteString.Lazy as BSL
+import qualified Data.ByteString as BS
 import Data.Aeson (Value(..), decode)
 import Data.Aeson.KeyMap (KeyMap, toList)
 import Data.Aeson.Key (toString)
-import Data.ByteString (ByteString, hGetSome, null)
-import Data.ByteString.Lazy (fromStrict, concat)
-import Data.Vector (Vector, head, last)
+import Data.Vector (Vector, (!?), length)
+import Data.Maybe (listToMaybe)
 import System.IO (stdin, hSetBinaryMode)
 
-readChunks :: Int -> IO [ByteString]
-readChunks chunkSize = do
+readJsonStream :: Int -> IO BSL.ByteString
+readJsonStream chunkSize = do
   hSetBinaryMode stdin True
-  let loop = do
-        chunk <- hGetSome stdin chunkSize
-        if Data.ByteString.null chunk
+  let readChunks = do
+        chunk <- BS.hGetSome stdin chunkSize
+        if BS.null chunk
           then return []
-          else (chunk :) <$> loop
-  loop
+          else (chunk :) <$> readChunks
+  BSL.fromChunks <$> readChunks
+
+safeHead, safeLast :: Vector a -> Maybe a
+safeHead vec = vec !? 0
+safeLast vec = vec !? (Data.Vector.length vec - 1)
 
 getArrayType :: Vector Value -> String
-getArrayType arr = do
-  if Prelude.null arr
-    then "unknown[]"
-  else do
-    let f = getValueType $ Data.Vector.head arr
-    let s = getValueType $ Data.Vector.last arr
-    if f == s
-      then f ++ "[]"
-    else "any[]"
+getArrayType arr
+  | null arr = "unknown[]"
+  | otherwise =
+    let types = [maybe "unknown" getValueType $ safeHead arr
+                ,maybe "unknown" getValueType $ safeLast arr]
+        headType = maybe "any" getValueType $ safeHead arr
+        allSame = all (== headType) types
+    in
+      if allSame
+        then headType ++ "[]"
+      else "any[]"
 
 getValueType :: Value -> String
-getValueType value = case value of
-    Object _ -> "object"
-    Array ar -> getArrayType ar
-    String _ -> "string"
-    Number _ -> "number"
-    Bool _ -> "boolean"
-    Null -> "null"
+getValueType v = case v of
+  Object _ -> "object"
+  Array ar -> getArrayType ar
+  String _ -> "string"
+  Number _ -> "number"
+  Bool _ -> "boolean"
+  Null -> "null"
+
+sanitizePath :: String -> String
+sanitizePath pth = case listToMaybe pth of
+  Just '.' -> tail pth
+  _ -> pth
 
 printObjectKV :: String -> KeyMap Value -> IO ()
-printObjectKV pthr obj = do
-  let lzt = toList obj
-  let pth = if not (Prelude.null pthr) && (Prelude.head pthr == '.') then tail pthr else pthr
-  if pth == ""
-    then putStrLn "根对象:"
-  else if Prelude.last pth == ']'
-    then putStrLn $ "`" ++ pth ++ "`中的对象:"
-  else putStrLn $ "`" ++ pth ++ "` 对象:"
+printObjectKV path obj = do
+  let entries = toList obj
+      cleanPath = sanitizePath path
+      header = case (cleanPath, listToMaybe cleanPath) of
+        ("", _) -> "根对象:"
+        (p, Just ']') -> "`" ++ p ++ "`中的对象:"
+        (p, _) -> "`" ++ p ++ "` 对象:"
+  putStrLn header
   putStrLn "\n| 字段 | 类型 | 内容 | 备注 |"
   putStrLn   "| ---- | ---- | ---- | ---- |"
-  mapM_ (\(k, v) -> do
+  mapM_ (\(k, v) ->
     putStrLn $ "| " ++ toString k ++ " | " ++ getValueType v ++ " |  |  |"
-    ) lzt
+    ) entries
   putStrLn ""
-  mapM_ (\(k, v) -> handleNestedObject (pth ++ "." ++ toString k) v) lzt
+  mapM_ (\(k, v) -> handleNestedObject (cleanPath ++ "." ++ toString k) v) entries
 
 handleNestedObject :: String -> Value -> IO ()
-handleNestedObject pth v = case v of
-  Object o -> printObjectKV pth o
-  Array arr -> do
-    if getArrayType arr /= "object[]"
-      then putStr ""
-    else case Data.Vector.head arr of
-      Object o -> printObjectKV (pth ++ "[]") o
-      _ -> putStr ""
-  _ -> putStr ""
+handleNestedObject path v = case v of
+  Object o -> printObjectKV path o
+  Array arr -> case safeHead arr of
+    Just (Object o) -> printObjectKV (path ++ "[]") o
+    _ -> pure ()
+  _ -> pure ()
 
 main :: IO ()
 main = do
-  chunks <- readChunks 4096
-  case decode $ Data.ByteString.Lazy.concat $ map fromStrict chunks of
+  jsonData <- readJsonStream 4096
+  case decode jsonData of
     Just (Object o) -> printObjectKV "" o
-    _ -> putStrLn "Not valid input"
+    Just val -> putStrLn $ "Not Object root: " ++ getValueType val
+    Nothing -> putStrLn "Not valid JSON input"
