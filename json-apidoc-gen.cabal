@@ -20,7 +20,7 @@ name:               json-apidoc-gen
 -- PVP summary:     +-+------- breaking API changes
 --                  | | +----- non-breaking API additions
 --                  | | | +--- code changes with no API change
-version:            0.1.0.1
+version:            0.1.1.0
 
 -- A short (one-line) description of the package.
 -- synopsis:
@@ -45,7 +45,7 @@ maintainer:         102411014+SessionHu@users.noreply.github.com
 build-type:         Simple
 
 -- Extra doc files to be distributed with the package, such as a CHANGELOG or a README.
-extra-doc-files:    CHANGELOG.md
+extra-doc-files:    README.md
 
 -- Extra source files to be distributed with the package, such as examples, or a tutorial module.
 -- extra-source-files:
@@ -67,7 +67,7 @@ executable json-apidoc-gen
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.17.2.1, aeson, bytestring, vector
+    build-depends:    base ^>=4.17.2.1, aeson ^>=2.2.3.0, bytestring ^>=0.11.5.3, vector ^>=0.13.2.0
 
     -- Directories containing source files.
     hs-source-dirs:   app
