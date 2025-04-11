@@ -3,8 +3,11 @@ module Main where
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString as BS
 import Data.Aeson (Value(..), decode)
+import Data.Aeson.Encode.Pretty (Indent(..), encodePretty', defConfig, confIndent)
 import Data.Aeson.KeyMap (KeyMap, toList)
 import Data.Aeson.Key (toString)
+import Data.Text (unpack)
+import Data.Text.Encoding (decodeUtf8)
 import Data.Vector (Vector, (!?), length)
 import Data.Maybe (listToMaybe)
 import System.IO (stderr, stdin, hPutStrLn)
@@ -89,7 +92,9 @@ main = do
       putStrLn "**示例:**\n"
       putStrLn "```shell\ncurl -\n```\n"
       putStrLn "<details>\n<summary>查看响应示例:</summary>\n"
-      putStrLn "```json\n```\n"
+      putStrLn "```json"
+      putStrLn $ unpack $ decodeUtf8 $ BSL.toStrict $ encodePretty' defConfig { confIndent = Spaces 2 } o
+      putStrLn "```"
       putStrLn "</details>"
     Just val -> hPutStrLn stderr $ "Not Object root: " ++ getValueType val
     Nothing -> hPutStrLn stderr "Not valid JSON input"
