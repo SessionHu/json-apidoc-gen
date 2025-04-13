@@ -2,6 +2,7 @@ module Main where
 
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString as BS
+import Control.Monad (when)
 import Data.Aeson (Value(..), decode)
 import Data.Aeson.Encode.Pretty (Indent(..), encodePretty', defConfig, confIndent)
 import Data.Aeson.KeyMap (KeyMap, toList)
@@ -11,6 +12,7 @@ import Data.Text.Encoding (decodeUtf8)
 import Data.Vector (Vector, (!?), length)
 import Data.Maybe (listToMaybe)
 import System.IO (stderr, stdin, hPutStrLn)
+import System.Environment (getArgs)
 
 readJsonStream :: Int -> IO BSL.ByteString
 readJsonStream chunkSize = do
@@ -49,7 +51,7 @@ getValueType v = case v of
 
 sanitizePath :: String -> String
 sanitizePath pth = case listToMaybe pth of
-  Just '.' -> tail pth
+  Just '.' -> drop 1 pth
   _ -> pth
 
 printObjectKV :: String -> KeyMap Value -> IO ()
@@ -79,22 +81,26 @@ handleNestedObject path v = case v of
 
 main :: IO ()
 main = do
+  args <- getArgs
+  let notmininal = "--mininal" `notElem` args
   jsonData <- readJsonStream 4096
   case decode jsonData of
     Just (Object o) -> do
-      putStrLn "## title\n"
-      putStrLn "> https://\n"
-      putStrLn "*请求方法: *\n"
-      putStrLn "认证方式: \n"
-      putStrLn "**URL 参数:**\n"
-      putStrLn "**JSON 回复:**\n"
+      when notmininal $ do
+        putStrLn "## title\n"
+        putStrLn "> https://\n"
+        putStrLn "*请求方法: *\n"
+        putStrLn "认证方式: \n"
+        putStrLn "**URL 参数:**\n"
+        putStrLn "**JSON 回复:**\n"
       printObjectKV "" o
-      putStrLn "**示例:**\n"
-      putStrLn "```shell\ncurl -\n```\n"
-      putStrLn "<details>\n<summary>查看响应示例:</summary>\n"
-      putStrLn "```json"
-      putStrLn $ unpack $ decodeUtf8 $ BSL.toStrict $ encodePretty' defConfig { confIndent = Spaces 2 } o
-      putStrLn "```"
-      putStrLn "</details>"
+      when notmininal $ do
+        putStrLn "**示例:**\n"
+        putStrLn "```shell\ncurl -\n```\n"
+        putStrLn "<details>\n<summary>查看响应示例:</summary>\n"
+        putStrLn "```json"
+        putStrLn $ unpack $ decodeUtf8 $ BSL.toStrict $ encodePretty' defConfig { confIndent = Spaces 2 } o
+        putStrLn "```"
+        putStrLn "</details>"
     Just val -> hPutStrLn stderr $ "Not Object root: " ++ getValueType val
     Nothing -> hPutStrLn stderr "Not valid JSON input"
