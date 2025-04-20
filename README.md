@@ -47,7 +47,7 @@
 The tool reads JSON data from the standard input. You can provide input in the following ways:
 - Pipe input: `echo '{"key": "value"}' | cabal run`
 - Read from a file: `cat example.json | cabal run`
-- Input manually
+- Input manually from *stdin*
 
 ### Command Output
 
@@ -141,6 +141,12 @@ curl -
 
 - If the input JSON is invalid, the tool outputs an error message to the standard error.
 - If the root of the JSON is not an object, the tool will indicate the unsupported type.
+
+### Known Issues
+
+- No i18n support, only support output in Simplified Chinese.
+- No object structure check within array.
+- Unrecognized object to be used as Map.
 
 ## License
 
