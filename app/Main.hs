@@ -1,3 +1,21 @@
+{-
+  json-apidoc-gen
+  Copyright (C) 2025 SessionHu
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-}
+
 module Main where
 
 import qualified Data.ByteString.Lazy as BSL
@@ -12,9 +30,12 @@ import Data.Text.Encoding (decodeUtf8)
 import Data.Time.Format.ISO8601 (iso8601Format, formatShowM)
 import Data.Time.Clock (getCurrentTime)
 import Data.Vector (Vector, (!?), length)
+import Data.Version (showVersion)
 import Data.Maybe (listToMaybe)
+import Paths_json_apidoc_gen (version)
 import System.IO (stderr, stdin, hPutStrLn)
 import System.Environment (getArgs)
+import System.Exit (exitSuccess)
 
 readJsonStream :: Int -> IO BSL.ByteString
 readJsonStream chunkSize = do
@@ -81,9 +102,30 @@ handleNestedObject path v = case v of
     _ -> pure ()
   _ -> pure ()
 
+printVersion :: IO ()
+printVersion = do
+  putStrLn $
+    "json-apidoc-gen " ++ showVersion version ++ "\n" ++
+    "Copyright (C) 2025 SessionHu\n" ++
+    "License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.\n" ++
+    "This is free software: you are free to change and redistribute it.\n" ++
+    "There is NO WARRANTY, to the extent permitted by law."
+  exitSuccess
+
+printHelp :: IO ()
+printHelp = do
+  putStrLn $
+    "Usage:\n" ++
+    "  --mininal  only output `JSON Response` forms\n" ++
+    "  --help     display this help and exit\n" ++
+    "  --version  output version information and exit"
+  exitSuccess
+
 main :: IO ()
 main = do
   args <- getArgs
+  when ("--help" `elem` args) printHelp
+  when ("--version" `elem` args) printVersion
   let notmininal = "--mininal" `notElem` args
   jsonData <- readJsonStream 4096
   case decode jsonData of
