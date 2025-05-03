@@ -42,6 +42,15 @@
 
 ## Usage
 
+### Arguments
+
+```text
+Usage:
+  --mininal  only output `JSON Response` forms
+  --help     display this help and exit
+  --version  output version information and exit
+```
+
 ### JSON Input
 
 The tool reads JSON data from the standard input. You can provide input in the following ways:
