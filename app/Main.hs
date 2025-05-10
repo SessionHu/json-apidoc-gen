@@ -20,6 +20,7 @@ module Main where
 
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString as BS
+import qualified Data.Vector as V
 import Control.Monad (when)
 import Data.Aeson (Value(..), decode)
 import Data.Aeson.Encode.Pretty (Indent(..), encodePretty', defConfig, confIndent)
@@ -29,7 +30,6 @@ import Data.Text (unpack)
 import Data.Text.Encoding (decodeUtf8)
 import Data.Time.Format.ISO8601 (iso8601Format, formatShowM)
 import Data.Time.Clock (getCurrentTime)
-import Data.Vector (Vector, (!?), length)
 import Data.Version (showVersion)
 import Data.Maybe (listToMaybe)
 import Paths_json_apidoc_gen (version)
@@ -46,22 +46,17 @@ readJsonStream chunkSize = do
           else (chunk :) <$> readChunks
   BSL.fromChunks <$> readChunks
 
-safeHead, safeLast :: Vector a -> Maybe a
-safeHead vec = vec !? 0
-safeLast vec = vec !? (Data.Vector.length vec - 1)
-
-getArrayType :: Vector Value -> String
-getArrayType arr
-  | null arr = "unknown[]"
+getArrayType :: V.Vector Value -> String
+getArrayType arr 
+  | V.null arr = "unknown[]"
   | otherwise =
-    let types = [maybe "unknown" getValueType $ safeHead arr
-                ,maybe "unknown" getValueType $ safeLast arr]
-        headType = maybe "any" getValueType $ safeHead arr
-        allSame = all (== headType) types
-    in
-      if allSame
-        then headType ++ "[]"
-      else "any[]"
+      let loop t e
+            | V.null e = t ++ "[]"
+            | otherwise =
+                let a = getValueType $ V.head e
+                in if a == t then loop a $ V.tail e
+                   else "any[]"
+      in loop (getValueType $ V.head arr) (V.tail arr)
 
 getValueType :: Value -> String
 getValueType v = case v of
@@ -97,7 +92,7 @@ printObjectKV path obj = do
 handleNestedObject :: String -> Value -> IO ()
 handleNestedObject path v = case v of
   Object o -> printObjectKV path o
-  Array arr -> case safeHead arr of
+  Array arr -> case arr V.!? 0 of
     Just (Object o) -> printObjectKV (path ++ "[]") o
     _ -> pure ()
   _ -> pure ()
