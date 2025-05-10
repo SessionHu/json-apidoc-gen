@@ -47,7 +47,7 @@ readJsonStream chunkSize = do
   BSL.fromChunks <$> readChunks
 
 getArrayType :: V.Vector Value -> String
-getArrayType arr 
+getArrayType arr
   | V.null arr = "unknown[]"
   | otherwise =
       let loop t e
