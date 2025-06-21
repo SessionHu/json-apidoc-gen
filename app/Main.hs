@@ -112,6 +112,7 @@ printHelp = do
   putStrLn $
     "Usage:\n" ++
     "  --mininal  only output `JSON Response` forms\n" ++
+    "  --no-req   do not show things about request\n" ++
     "  --help     display this help and exit\n" ++
     "  --version  output version information and exit"
   exitSuccess
@@ -122,10 +123,11 @@ main = do
   when ("--help" `elem` args) printHelp
   when ("--version" `elem` args) printVersion
   let notmininal = "--mininal" `notElem` args
+      noreq = "--no-req" `elem` args
   jsonData <- readJsonStream 4096
   case decode jsonData of
     Just (Object o) -> do
-      when notmininal $
+      when (notmininal && not noreq) $
         putStrLn $
           "## title\n\n" ++
           "> https://\n\n" ++
@@ -134,12 +136,16 @@ main = do
           "**URL 参数:**\n\n" ++
           "**JSON 回复:**\n"
       printObjectKV "" o
-      when notmininal $
-        putStrLn $
+      when (notmininal || noreq) $
+        putStrLn $ 
           "**示例:**\n\n" ++
-          "```shell\ncurl -\n```\n\n" ++
-          "<details>\n<summary>查看响应示例:</summary>\n\n" ++
-          "```json\n" ++
+          (if noreq then
+            "<details>\n<summary>查看示例:</summary>\n"
+          else 
+            "```shell\ncurl -\n```\n\n" ++
+            "<details>\n<summary>查看响应示例:</summary>\n"
+          ) ++
+          "\n```json\n" ++
           unpack (decodeUtf8 $ BSL.toStrict $ encodePretty' defConfig { confIndent = Spaces 2 } o) ++
           "\n```\n" ++
           "</details>\n"
