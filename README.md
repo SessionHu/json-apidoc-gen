@@ -10,7 +10,7 @@
 - **Flexible Type Inference**: Detects field types in JSON, including arrays and nested objects.
 - **Markdown Documentation Output**: Outputs documentation templates in a human-readable Markdown format.
 - **Designed for API Documentation**: Ideal for generating API design documents or interface descriptions.
-- **BAC Based**: Originally designed for [bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)
+- **BAC Based**: Originally designed for BAC.
 
 ## Installation
 
